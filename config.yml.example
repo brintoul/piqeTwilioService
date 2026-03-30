@@ -1,0 +1,61 @@
+---
+logging:
+  level: INFO
+  loggers:
+    com.controlledthinking: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+  appenders:
+    - type: console
+      threshold: ALL
+      target: stdout
+      logFormat: "%d [%p] %c - %m%n"
+    - type: file
+      currentLogFilename: ./logs/app.log
+      archivedLogFilenamePattern: ./logs/app-%d.log.gz
+      archivedFileCount: 5
+      timeZone: UTC
+server:
+  rootPath: /api/
+  applicationConnectors:
+    - type: http
+      port: 9090
+  adminConnectors:
+    - type: http
+      port: 9091
+database:
+  driverClass: com.mysql.jdbc.Driver
+  url: ${DB_URL:-jdbc:mysql://localhost:3306/piqeHelper?useSSL=false}
+  user: ${DB_USER:-root}
+  password: ${DB_PASSWORD}
+  properties:
+    hibernate.dialect: org.hibernate.dialect.MySQL5Dialect
+    hibernate.show_sql: false
+    hibernate.format_sql: true
+
+twilioAccountSid: ${TWILIO_ACCOUNT_SID}
+twilioAuthToken: ${TWILIO_AUTH_TOKEN}
+twilioMessagingServiceSid: ${TWILIO_MESSAGING_SERVICE_SID}
+costPerMessage: 0.03
+costPerMms: 0.10
+
+jwtSecret: ${JWT_SECRET}
+frontendBaseUrl: "https://www.example.com/notifier"
+
+mediaStoragePath: "./media"
+mediaBaseUrl: "https://www.example.com/api/media"
+
+google:
+  clientId: ${GOOGLE_CLIENT_ID}
+  clientSecret: ${GOOGLE_CLIENT_SECRET}
+  callbackUrl: "https://www.example.com/api/auth/oauth/google/callback"
+
+microsoft:
+  clientId: ""
+  clientSecret: ""
+  callbackUrl: "https://www.example.com/notifier/api/auth/oauth/microsoft/callback"
+
+github:
+  clientId: ""
+  clientSecret: ""
+  callbackUrl: "https://www.example.com/notifier/api/auth/oauth/github/callback"

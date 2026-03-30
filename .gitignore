@@ -1,0 +1,19 @@
+# Sensitive configuration - never commit real credentials
+config.yml
+
+# Build output
+target/
+
+# IDE files
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
