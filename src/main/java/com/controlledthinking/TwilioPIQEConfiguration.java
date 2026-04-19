@@ -43,9 +43,14 @@ public class TwilioPIQEConfiguration extends Configuration {
     @NotEmpty
     private String mediaBaseUrl;
 
+    private boolean devMode = false;
+
     private OAuthProviderConfig google    = new OAuthProviderConfig();
     private OAuthProviderConfig microsoft = new OAuthProviderConfig();
     private OAuthProviderConfig github    = new OAuthProviderConfig();
+
+    public boolean isDevMode() { return devMode; }
+    public void setDevMode(boolean devMode) { this.devMode = devMode; }
 
     // Existing getters/setters
     public String getTwilioAccountSid() { return twilioAccountSid; }

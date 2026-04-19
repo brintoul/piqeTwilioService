@@ -16,7 +16,7 @@ CREATE TABLE CUSTOMER (
 CREATE TABLE USER (
     customer_id CHAR(36) NOT NULL,
     username VARCHAR(512),
-    encr_code VARCHAR(512)
+    encr_code VARCHAR(512),
     PRIMARY KEY (username),
     CONSTRAINT fk_customer_user
         FOREIGN KEY (customer_id)
@@ -84,6 +84,21 @@ CREATE TABLE ALERT_MESSAGE (
     message VARCHAR(1024) NOT NULL,
     active TINYINT(1) NOT NULL DEFAULT 0,
     PRIMARY KEY (message_id)
+);
+
+CREATE TABLE APPOINTMENT (
+    appointment_id CHAR(36) NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    phone_number VARCHAR(20),
+    appointment_time DATETIME NOT NULL,
+    customer_id CHAR(36) NOT NULL,
+    PRIMARY KEY (appointment_id),
+    CONSTRAINT fk_appointment_customer
+        FOREIGN KEY (customer_id)
+        REFERENCES CUSTOMER (customer_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 );
 
 CREATE TABLE PERSON_OR_ENTITY (

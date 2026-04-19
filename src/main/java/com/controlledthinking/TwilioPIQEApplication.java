@@ -1,6 +1,9 @@
 package com.controlledthinking;
 
+import com.controlledthinking.dao.AppointmentDAO;
+import com.controlledthinking.db.Appointment;
 import com.controlledthinking.db.PersonOrEntity;
+import com.controlledthinking.resources.AppointmentResource;
 import com.controlledthinking.client.TwilioServicesProvider;
 import com.controlledthinking.dao.AlertQueueDAO;
 import com.controlledthinking.dao.AlertQueueMessageDAO;
@@ -58,7 +61,7 @@ public class TwilioPIQEApplication extends Application<TwilioPIQEConfiguration> 
     }
 
     private final HibernateBundle<TwilioPIQEConfiguration> hibernate =
-        new HibernateBundle<>(PersonOrEntity.class, AlertQueueEntry.class, AlertQueue.class, AlertMessage.class, Customer.class, CustomerTransaction.class, AppUser.class) {
+        new HibernateBundle<>(Appointment.class, PersonOrEntity.class, AlertQueueEntry.class, AlertQueue.class, AlertMessage.class, Customer.class, CustomerTransaction.class, AppUser.class) {
             @Override
             public DataSourceFactory getDataSourceFactory(TwilioPIQEConfiguration configuration) {
                 return configuration.getDataSourceFactory();
@@ -85,6 +88,7 @@ public class TwilioPIQEApplication extends Application<TwilioPIQEConfiguration> 
             configuration.getTwilioMessagingServiceSid()
         );
 
+        final AppointmentDAO appointmentDAO = new AppointmentDAO(hibernate.getSessionFactory());
         final PersonOrEntityDAO dao = new PersonOrEntityDAO(hibernate.getSessionFactory());
         final AlertQueueDAO aqDao = new AlertQueueDAO(hibernate.getSessionFactory());
         final AlertQueueMessageDAO aqmDao = new AlertQueueMessageDAO(hibernate.getSessionFactory());
@@ -116,7 +120,7 @@ public class TwilioPIQEApplication extends Application<TwilioPIQEConfiguration> 
         NotificationsResource resource = new NotificationsResource(twilioClient, dao);
         InputResource inputResource = new InputResource(aqDao, personOrEntityService);
         PersonEntityResource personEntityResource = new PersonEntityResource(dao);
-        MessageResultProcessor messageResultProcessor = new BasicMessageResultProcessor(ctDao);
+        MessageResultProcessor messageResultProcessor = new BasicMessageResultProcessor(ctDao, configuration.isDevMode(), hibernate.getSessionFactory());
         QueueResource queueResource = new QueueResource(twilioClient, aqDao, aqmDao, messageResultProcessor, configuration.getCostPerMessage(), configuration.getLowCreditThreshold());
 
         // Chained authentication: Basic Auth (username/password) + Bearer JWT (OAuth)
@@ -151,5 +155,6 @@ public class TwilioPIQEApplication extends Application<TwilioPIQEConfiguration> 
         environment.jersey().register(new CreditResource(hibernate.getSessionFactory()));
         environment.jersey().register(new SmsWebhookResource(hibernate.getSessionFactory()));
         environment.jersey().register(new OAuthResource(configuration, hibernate.getSessionFactory(), jwtUtil));
+        environment.jersey().register(new AppointmentResource(appointmentDAO));
     }
 }
