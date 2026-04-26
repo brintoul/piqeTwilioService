@@ -115,3 +115,30 @@ CREATE TABLE PERSON_OR_ENTITY (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
+
+CREATE TABLE CONTACT_LIST (
+    id CHAR(36) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    customer_id CHAR(36) NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_contact_list_customer
+        FOREIGN KEY (customer_id)
+        REFERENCES CUSTOMER (customer_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE CONTACT_LIST_PERSON (
+    contact_list_id CHAR(36) NOT NULL,
+    person_or_entity_id CHAR(36) NOT NULL,
+    PRIMARY KEY (contact_list_id, person_or_entity_id),
+    CONSTRAINT fk_clp_contact_list
+        FOREIGN KEY (contact_list_id)
+        REFERENCES CONTACT_LIST (id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_clp_person
+        FOREIGN KEY (person_or_entity_id)
+        REFERENCES PERSON_OR_ENTITY (id)
+        ON DELETE CASCADE
+);

@@ -1,9 +1,12 @@
 package com.controlledthinking;
 
 import com.controlledthinking.dao.AppointmentDAO;
+import com.controlledthinking.dao.ContactListDAO;
 import com.controlledthinking.db.Appointment;
+import com.controlledthinking.db.ContactList;
 import com.controlledthinking.db.PersonOrEntity;
 import com.controlledthinking.resources.AppointmentResource;
+import com.controlledthinking.resources.ContactListResource;
 import com.controlledthinking.client.TwilioServicesProvider;
 import com.controlledthinking.dao.AlertQueueDAO;
 import com.controlledthinking.dao.AlertQueueMessageDAO;
@@ -18,6 +21,7 @@ import com.controlledthinking.db.CustomerTransaction;
 import com.controlledthinking.filter.CORSFilter;
 import com.controlledthinking.filter.CreditCheckFilter;
 import com.controlledthinking.service.BasicMessageResultProcessor;
+import com.controlledthinking.service.ContactListService;
 import com.controlledthinking.service.MessageResultProcessor;
 import com.controlledthinking.service.PersonOrEntityService;
 import com.controlledthinking.resources.InputResource;
@@ -61,7 +65,7 @@ public class TwilioPIQEApplication extends Application<TwilioPIQEConfiguration> 
     }
 
     private final HibernateBundle<TwilioPIQEConfiguration> hibernate =
-        new HibernateBundle<>(Appointment.class, PersonOrEntity.class, AlertQueueEntry.class, AlertQueue.class, AlertMessage.class, Customer.class, CustomerTransaction.class, AppUser.class) {
+        new HibernateBundle<>(Appointment.class, PersonOrEntity.class, ContactList.class, AlertQueueEntry.class, AlertQueue.class, AlertMessage.class, Customer.class, CustomerTransaction.class, AppUser.class) {
             @Override
             public DataSourceFactory getDataSourceFactory(TwilioPIQEConfiguration configuration) {
                 return configuration.getDataSourceFactory();
@@ -90,6 +94,7 @@ public class TwilioPIQEApplication extends Application<TwilioPIQEConfiguration> 
 
         final AppointmentDAO appointmentDAO = new AppointmentDAO(hibernate.getSessionFactory());
         final PersonOrEntityDAO dao = new PersonOrEntityDAO(hibernate.getSessionFactory());
+        final ContactListDAO clDao = new ContactListDAO(hibernate.getSessionFactory());
         final AlertQueueDAO aqDao = new AlertQueueDAO(hibernate.getSessionFactory());
         final AlertQueueMessageDAO aqmDao = new AlertQueueMessageDAO(hibernate.getSessionFactory());
         final CustomerTransactionDAO ctDao = new CustomerTransactionDAO(hibernate.getSessionFactory());
@@ -116,6 +121,7 @@ public class TwilioPIQEApplication extends Application<TwilioPIQEConfiguration> 
             .addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/api/queue/*");
 
         PersonOrEntityService personOrEntityService = new PersonOrEntityService(dao);
+        ContactListService contactListService = new ContactListService(clDao, personOrEntityService);
 
         NotificationsResource resource = new NotificationsResource(twilioClient, dao);
         InputResource inputResource = new InputResource(aqDao, personOrEntityService);
@@ -156,5 +162,6 @@ public class TwilioPIQEApplication extends Application<TwilioPIQEConfiguration> 
         environment.jersey().register(new SmsWebhookResource(hibernate.getSessionFactory()));
         environment.jersey().register(new OAuthResource(configuration, hibernate.getSessionFactory(), jwtUtil));
         environment.jersey().register(new AppointmentResource(appointmentDAO));
+        environment.jersey().register(new ContactListResource(clDao, contactListService));
     }
 }

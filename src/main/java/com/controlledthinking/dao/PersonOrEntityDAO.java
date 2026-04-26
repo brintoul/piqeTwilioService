@@ -43,4 +43,13 @@ public class PersonOrEntityDAO extends AbstractDAO<PersonOrEntity> {
                 .uniqueResult();
         return count != null && count > 0;
     }
+
+    public Optional<PersonOrEntity> findByNameAndPhone(String firstName, String lastName, String phoneNumber) {
+        return currentSession()
+                .createQuery("FROM PersonOrEntity p WHERE p.firstName = :fn AND p.lastName = :ln AND p.phoneNumber = :pn", PersonOrEntity.class)
+                .setParameter("fn", firstName)
+                .setParameter("ln", lastName)
+                .setParameter("pn", phoneNumber)
+                .uniqueResultOptional();
+    }
 }

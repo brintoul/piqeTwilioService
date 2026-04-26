@@ -2,6 +2,7 @@ package com.controlledthinking.service;
 
 import com.controlledthinking.dao.PersonOrEntityDAO;
 import com.controlledthinking.db.PersonOrEntity;
+import com.controlledthinking.dto.UploadResult;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -25,6 +26,28 @@ public class PersonOrEntityService {
 
     public PersonOrEntityService(PersonOrEntityDAO peDao) {
         this.peDao = peDao;
+    }
+
+    public UploadResult parseAndUpsert(InputStream inputStream, UUID customerId) throws IOException {
+        List<PersonOrEntity> result = new ArrayList<>();
+        List<PersonOrEntity> candidates = parseSpreadsheet(inputStream);
+        var customer = peDao.getCustomerReference(customerId);
+        int skipped = 0;
+
+        for (PersonOrEntity pe : candidates) {
+            String normalized = normalizePhone(pe.getPhoneNumber());
+            if (!isValidE164(normalized)) {
+                logger.warn("Invalid phone number for {} {}: '{}'", pe.getFirstName(), pe.getLastName(), pe.getPhoneNumber());
+                skipped++;
+                continue;
+            }
+            pe.setPhoneNumber(normalized);
+            result.add(peDao.findByNameAndPhone(pe.getFirstName(), pe.getLastName(), normalized).orElseGet(() -> {
+                pe.setCustomer(customer);
+                return peDao.create(pe);
+            }));
+        }
+        return new UploadResult(result, result.size(), skipped);
     }
 
     public String importFromSpreadsheet(InputStream inputStream, UUID customerId) throws IOException {

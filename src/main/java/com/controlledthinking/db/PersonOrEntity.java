@@ -1,5 +1,6 @@
 package com.controlledthinking.db;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -34,6 +35,7 @@ public class PersonOrEntity {
     @Column(name = "PHONE_NUMBER", length = 20)
     private String phoneNumber;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CUSTOMER_ID", nullable = false)
     private Customer customer;
