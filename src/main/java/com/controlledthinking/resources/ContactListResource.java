@@ -4,6 +4,7 @@ import com.controlledthinking.auth.User;
 import com.controlledthinking.dao.ContactListDAO;
 import com.controlledthinking.db.ContactList;
 import com.controlledthinking.dto.ContactListSummary;
+import com.controlledthinking.dto.ContactListUploadResponse;
 import com.controlledthinking.service.ContactListService;
 import io.dropwizard.auth.Auth;
 import io.dropwizard.hibernate.UnitOfWork;
@@ -51,7 +52,7 @@ public class ContactListResource {
             return Response.status(400).entity("Contact list name is required").type(MediaType.TEXT_PLAIN).build();
         }
         try {
-            ContactList list = clService.createFromUpload(name, fileStream, user.getCustomerId());
+            ContactListUploadResponse list = clService.createFromUpload(name, fileStream, user.getCustomerId());
             return Response.ok(list).build();
         } catch (IllegalArgumentException e) {
             return Response.status(400).entity(e.getMessage()).type(MediaType.TEXT_PLAIN).build();
