@@ -2,23 +2,18 @@ package com.controlledthinking.resources;
 
 import com.controlledthinking.TwilioPIQEConfiguration;
 import com.controlledthinking.TwilioPIQEConfiguration.OAuthProviderConfig;
+import com.controlledthinking.auth.AuthService;
 import com.controlledthinking.auth.JwtUtil;
 import com.controlledthinking.auth.User;
-import com.controlledthinking.db.AppUser;
-import com.controlledthinking.db.Customer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -26,9 +21,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 
 @Path("/auth/oauth")
 public class OAuthResource {
@@ -36,17 +28,17 @@ public class OAuthResource {
     private static final Logger logger = LoggerFactory.getLogger(OAuthResource.class);
 
     private final TwilioPIQEConfiguration config;
-    private final SessionFactory sessionFactory;
     private final JwtUtil jwtUtil;
+    private final AuthService authService;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     public OAuthResource(TwilioPIQEConfiguration config,
-                         SessionFactory sessionFactory,
-                         JwtUtil jwtUtil) {
+                         JwtUtil jwtUtil,
+                         AuthService authService) {
         this.config = config;
-        this.sessionFactory = sessionFactory;
         this.jwtUtil = jwtUtil;
+        this.authService = authService;
     }
 
     // -------------------------------------------------------------------------
@@ -113,7 +105,7 @@ public class OAuthResource {
             String preferredUsername = extractUsername(provider, userInfo);
 
             // Find or create user
-            User user = findOrCreateUser(provider, subjectId, email, preferredUsername);
+            User user = authService.findOrCreateUser(provider, subjectId, email, preferredUsername);
 
             // Generate JWT
             String jwt = jwtUtil.generateToken(user);
@@ -302,79 +294,6 @@ public class OAuthResource {
             case "github"    -> str(userInfo.get("login"));
             default          -> null;
         };
-    }
-
-    // -------------------------------------------------------------------------
-    // Find existing user by OAuth subject, or create a new one
-    // -------------------------------------------------------------------------
-    private User findOrCreateUser(String provider, String subjectId,
-                                   String email, String preferredUsername) {
-        try (Session session = sessionFactory.openSession()) {
-            // Check for existing OAuth user
-            Optional<AppUser> existing = session
-                .createNamedQuery("AppUser.findByOAuthSubject", AppUser.class)
-                .setParameter("provider", provider)
-                .setParameter("subjectId", subjectId)
-                .uniqueResultOptional();
-
-            if (existing.isPresent()) {
-                AppUser appUser = existing.get();
-                return toUser(appUser);
-            }
-
-            // New OAuth user — create Customer + AppUser in a transaction
-            Transaction tx = session.beginTransaction();
-            try {
-                Customer customer = new Customer();
-                customer.setCustomerId(UUID.randomUUID());
-                customer.setName(preferredUsername != null ? preferredUsername : email);
-                customer.setCreditBalance(new BigDecimal("1.00"));
-                session.persist(customer);
-
-                // Ensure username uniqueness
-                String username = resolveUniqueUsername(session, preferredUsername, provider, subjectId);
-
-                AppUser newUser = new AppUser();
-                newUser.setUsername(username);
-                newUser.setEmail(email);
-                newUser.setOauthProvider(provider);
-                newUser.setOauthSubjectId(subjectId);
-                newUser.setCustomer(customer);
-                session.persist(newUser);
-
-                tx.commit();
-                return toUser(newUser);
-
-            } catch (Exception e) {
-                tx.rollback();
-                throw e;
-            }
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // If the preferred username is already taken, fall back to provider_subjectId
-    // -------------------------------------------------------------------------
-    private String resolveUniqueUsername(Session session, String preferred,
-                                          String provider, String subjectId) {
-        if (preferred != null) {
-            Optional<AppUser> clash = session
-                .createNamedQuery("AppUser.findByUsername", AppUser.class)
-                .setParameter("username", preferred)
-                .uniqueResultOptional();
-            if (clash.isEmpty()) {
-                return preferred;
-            }
-        }
-        // Fallback: provider_first8charsOfSubject (guaranteed unique by DB constraint)
-        return provider + "_" + subjectId.substring(0, Math.min(8, subjectId.length()));
-    }
-
-    private User toUser(AppUser appUser) {
-        UUID customerId = appUser.getCustomer() != null
-            ? appUser.getCustomer().getCustomerId()
-            : null;
-        return new User(appUser.getUsername(), Set.of("USER"), customerId);
     }
 
     private static String str(Object val) {

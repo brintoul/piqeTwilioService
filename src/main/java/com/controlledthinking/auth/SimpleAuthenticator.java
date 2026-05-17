@@ -26,7 +26,7 @@ public class SimpleAuthenticator implements Authenticator<BasicCredentials, User
                 .setParameter("username", credentials.getUsername())
                 .uniqueResultOptional();
 
-            if (appUser.isPresent() && appUser.get().getPassword().equals(credentials.getPassword())) {
+            if (appUser.isPresent() && appUser.get().getPassword() != null && appUser.get().getPassword().equals(credentials.getPassword())) {
                 AppUser user = appUser.get();
                 return Optional.of(new User(
                     user.getUsername(),
