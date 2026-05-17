@@ -49,6 +49,8 @@ public class TwilioPIQEConfiguration extends Configuration {
     private OAuthProviderConfig microsoft = new OAuthProviderConfig();
     private OAuthProviderConfig github    = new OAuthProviderConfig();
 
+    private FusionAuthConfig fusionAuth = new FusionAuthConfig();
+
     public boolean isDevMode() { return devMode; }
     public void setDevMode(boolean devMode) { this.devMode = devMode; }
 
@@ -112,6 +114,11 @@ public class TwilioPIQEConfiguration extends Configuration {
     @JsonProperty("github")
     public void setGithub(OAuthProviderConfig github) { this.github = github; }
 
+    @JsonProperty("fusionAuth")
+    public FusionAuthConfig getFusionAuth() { return fusionAuth; }
+    @JsonProperty("fusionAuth")
+    public void setFusionAuth(FusionAuthConfig fusionAuth) { this.fusionAuth = fusionAuth; }
+
     public static class OAuthProviderConfig {
         private String clientId     = "";
         private String clientSecret = "";
@@ -129,6 +136,26 @@ public class TwilioPIQEConfiguration extends Configuration {
         public boolean isConfigured() {
             return clientId != null && !clientId.isEmpty()
                 && clientSecret != null && !clientSecret.isEmpty();
+        }
+    }
+
+    public static class FusionAuthConfig {
+        private String url           = "";
+        private String applicationId = "";
+        private String apiKey        = "";
+
+        public String getUrl() { return url; }
+        public void setUrl(String url) { this.url = url; }
+
+        public String getApplicationId() { return applicationId; }
+        public void setApplicationId(String applicationId) { this.applicationId = applicationId; }
+
+        public String getApiKey() { return apiKey; }
+        public void setApiKey(String apiKey) { this.apiKey = apiKey; }
+
+        public boolean isConfigured() {
+            return url != null && !url.isEmpty()
+                && applicationId != null && !applicationId.isEmpty();
         }
     }
 }

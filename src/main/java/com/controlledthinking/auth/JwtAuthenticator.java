@@ -7,14 +7,14 @@ import java.util.Optional;
 
 public class JwtAuthenticator implements Authenticator<String, User> {
 
-    private final JwtUtil jwtUtil;
+    private final AuthService authService;
 
-    public JwtAuthenticator(JwtUtil jwtUtil) {
-        this.jwtUtil = jwtUtil;
+    public JwtAuthenticator(AuthService authService) {
+        this.authService = authService;
     }
 
     @Override
     public Optional<User> authenticate(String token) throws AuthenticationException {
-        return jwtUtil.parseToken(token);
+        return authService.validateToken(token);
     }
 }

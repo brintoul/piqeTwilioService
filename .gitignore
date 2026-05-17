@@ -12,7 +12,9 @@ target/
 .settings/
 
 # Logs
+logs/
 *.log
+*.log.gz
 
 # OS files
 .DS_Store

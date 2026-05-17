@@ -35,8 +35,11 @@ import com.controlledthinking.resources.MmsResource;
 import com.controlledthinking.resources.TransactionResource;
 import com.controlledthinking.resources.CreditResource;
 import com.controlledthinking.resources.SmsWebhookResource;
+import com.controlledthinking.auth.AuthService;
+import com.controlledthinking.auth.FusionAuthService;
 import com.controlledthinking.auth.JwtAuthenticator;
 import com.controlledthinking.auth.JwtUtil;
+import com.controlledthinking.auth.LocalAuthService;
 import com.controlledthinking.auth.SimpleAuthenticator;
 import com.controlledthinking.auth.SimpleAuthorizer;
 import com.controlledthinking.auth.User;
@@ -112,8 +115,15 @@ public class TwilioPIQEApplication extends Application<TwilioPIQEConfiguration> 
             .addFilter("CORSFilter", new CORSFilter())
             .addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
 
-        // JWT utility — shared between OAuthResource, JwtAuthenticator, and CreditCheckFilter
+        // JWT utility — still used by OAuthResource and CreditCheckFilter
         final JwtUtil jwtUtil = new JwtUtil(configuration.getJwtSecret());
+        final AuthService authService = configuration.getFusionAuth().isConfigured()
+            ? new FusionAuthService(
+                configuration.getFusionAuth().getUrl(),
+                configuration.getFusionAuth().getApplicationId(),
+                configuration.getFusionAuth().getApiKey(),
+                hibernate.getSessionFactory())
+            : new LocalAuthService(jwtUtil, hibernate.getSessionFactory());
 
         environment.servlets()
             .addFilter("CreditCheckFilter", new CreditCheckFilter(
@@ -138,7 +148,7 @@ public class TwilioPIQEApplication extends Application<TwilioPIQEConfiguration> 
                     .setRealm("PIQE")
                     .buildAuthFilter(),
                 new OAuthCredentialAuthFilter.Builder<User>()
-                    .setAuthenticator(new JwtAuthenticator(jwtUtil))
+                    .setAuthenticator(new JwtAuthenticator(authService))
                     .setAuthorizer(new SimpleAuthorizer())
                     .setPrefix("Bearer")
                     .buildAuthFilter()
@@ -156,11 +166,11 @@ public class TwilioPIQEApplication extends Application<TwilioPIQEConfiguration> 
         environment.jersey().register(queueResource);
         environment.jersey().register(inputResource);
         environment.jersey().register(personEntityResource);
-        environment.jersey().register(new AuthResource());
+        environment.jersey().register(new AuthResource(authService));
         environment.jersey().register(new TransactionResource(ctDao));
         environment.jersey().register(new CreditResource(hibernate.getSessionFactory()));
         environment.jersey().register(new SmsWebhookResource(hibernate.getSessionFactory()));
-        environment.jersey().register(new OAuthResource(configuration, hibernate.getSessionFactory(), jwtUtil));
+        environment.jersey().register(new OAuthResource(configuration, jwtUtil, authService));
         environment.jersey().register(new AppointmentResource(appointmentDAO));
         environment.jersey().register(new ContactListResource(clDao, contactListService));
     }
